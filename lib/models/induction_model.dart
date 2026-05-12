@@ -7,42 +7,24 @@ class Induction {
   Id id = Isar.autoIncrement;
 
   @Index()
-  late String nombreCompleto;
-
-  @Index(unique: true)
-  late String cedula; // Campo único para evitar duplicados
+  late String nombreContratista;
 
   @Index()
   late DateTime fechaInduccion;
 
-  late String horaInduccion; // HH:mm
+  late String actividad; // Actividad que realizó
 
-  late String departamento;
+  late String lugar; // Lugar donde se realizó
 
-  late String nombreEncargado;
-
-  late String telefonoContacto;
-
-  late String email;
-
-  late String estado; // 'completada', 'pendiente', 'reprogramada'
-
-  late String notas; // Observaciones durante la inducción
+  late String notas; // Observaciones
 
   late DateTime fechaCreacion;
 
-  late DateTime? fechaCompletacion;
-
   Induction({
-    required this.nombreCompleto,
-    required this.cedula,
+    required this.nombreContratista,
     required this.fechaInduccion,
-    required this.horaInduccion,
-    required this.departamento,
-    required this.nombreEncargado,
-    required this.telefonoContacto,
-    required this.email,
-    this.estado = 'pendiente',
+    required this.actividad,
+    required this.lugar,
     this.notas = '',
   }) {
     fechaCreacion = DateTime.now();

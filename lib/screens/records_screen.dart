@@ -104,29 +104,21 @@ class _RecordsScreenState extends State<RecordsScreen> {
           // Search Bar
           Padding(
             padding: const EdgeInsets.all(16),
-            child: SearchAnchor(
-              builder: (BuildContext context, SearchController controller) {
-                return SearchBar(
-                  controller: _searchController,
-                  leading: const Icon(Icons.search),
-                  hintText: 'Buscar por nombre, cédula o departamento...',
-                  trailing: _searchController.text.isNotEmpty
-                      ? [
-                          IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              _loadInductions();
-                            },
-                          ),
-                        ]
-                      : null,
-                );
-              },
-              suggestionsBuilder: (BuildContext context,
-                  SearchController controller) {
-                return List<ListTile>.empty();
-              },
+            child: SearchBar(
+              controller: _searchController,
+              leading: const Icon(Icons.search),
+              hintText: 'Buscar por nombre...',
+              trailing: _searchController.text.isNotEmpty
+                  ? [
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _loadInductions();
+                        },
+                      ),
+                    ]
+                  : null,
             ),
           ),
 
@@ -191,7 +183,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: InductionCard(
                       induction: induction,
-                      onStatusChanged: () {
+                      onDeleted: () {
                         _loadInductions();
                       },
                     ),

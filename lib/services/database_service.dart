@@ -22,19 +22,9 @@ class DatabaseService {
     );
   }
 
-  // Crear nueva inducción con validación de duplicados
+  // Crear nueva inducción
   Future<bool> createInduction(Induction induction) async {
     try {
-      // Verificar si ya existe una inducción con la misma cédula
-      final exists = await isar.inductions
-          .where()
-          .cedulaEqualTo(induction.cedula)
-          .findFirst();
-
-      if (exists != null) {
-        return false; // Duplicado encontrado
-      }
-
       await isar.writeTxn(() async {
         await isar.inductions.put(induction);
       });
@@ -61,7 +51,7 @@ class DatabaseService {
     return await isar.inductions
         .where()
         .fechaInduccionBetween(startOfDay, endOfDay)
-        .sortByHoraInduccion()
+        .sortByFechaInduccionDesc()
         .findAll();
   }
 
@@ -72,36 +62,18 @@ class DatabaseService {
     return await isar.inductions
         .where()
         .filter()
-        .nombreCompletoContains(query, caseSensitive: false)
-        .or()
-        .cedulaContains(query, caseSensitive: false)
-        .or()
-        .departamentoContains(query, caseSensitive: false)
+        .nombreContratistaContains(query, caseSensitive: false)
         .sortByFechaInduccionDesc()
         .findAll();
   }
 
-  // Actualizar estado de inducción
-  Future<bool> updateInductionStatus(
-      int id, String newStatus, String notes) async {
-    try {
-      final induction = await isar.inductions.get(id);
-      if (induction != null) {
-        induction.estado = newStatus;
-        induction.notas = notes;
-        if (newStatus == 'completada') {
-          induction.fechaCompletacion = DateTime.now();
-        }
-        await isar.writeTxn(() async {
-          await isar.inductions.put(induction);
-        });
-        return true;
-      }
-      return false;
-    } catch (e) {
-      print('Error actualizando inducción: $e');
-      return false;
-    }
+  // Verificar si un contratista ya tiene inducción registrada
+  Future<bool> hasInductionRecord(String nombre) async {
+    final existing = await isar.inductions
+        .where()
+        .nombreContratistaEqualTo(nombre.trim().toLowerCase())
+        .findFirst();
+    return existing != null;
   }
 
   // Eliminar inducción

@@ -14,19 +14,17 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
   int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers para paso 1: Datos Básicos
+  // Paso 1: Datos del contratista
   final _nombreController = TextEditingController();
-  final _cedulaController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _emailController = TextEditingController();
 
-  // Controllers para paso 2: Programación
+  // Paso 2: Programación
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
-  String _selectedDepartment = 'Recursos Humanos';
+  final _actividadController = TextEditingController();
+  final _lugarController = TextEditingController();
 
-  // Controllers para paso 3: Encargado
-  final _nombreEncargadoController = TextEditingController();
+  // Paso 3: Observaciones
   final _notasController = TextEditingController();
 
   final _dbService = DatabaseService.instance;
@@ -34,10 +32,10 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
   @override
   void dispose() {
     _nombreController.dispose();
-    _cedulaController.dispose();
     _telefonoController.dispose();
     _emailController.dispose();
-    _nombreEncargadoController.dispose();
+    _actividadController.dispose();
+    _lugarController.dispose();
     _notasController.dispose();
     super.dispose();
   }
@@ -46,8 +44,8 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (picked != null) {
       setState(() {
@@ -56,30 +54,13 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
     }
   }
 
-  Future<void> _selectTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-      });
-    }
-  }
-
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final induction = Induction(
-        nombreCompleto: _nombreController.text.trim(),
-        cedula: _cedulaController.text.trim(),
+        nombreContratista: _nombreController.text.trim(),
         fechaInduccion: _selectedDate,
-        horaInduccion:
-            '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
-        departamento: _selectedDepartment,
-        nombreEncargado: _nombreEncargadoController.text.trim(),
-        telefonoContacto: _telefonoController.text.trim(),
-        email: _emailController.text.trim(),
+        actividad: _actividadController.text.trim(),
+        lugar: _lugarController.text.trim(),
         notas: _notasController.text.trim(),
       );
 
@@ -102,7 +83,7 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error: Ya existe una inducción con esta cédula'),
+            content: Text('Error al registrar la inducción'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 2),
           ),
@@ -113,14 +94,12 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
 
   void _resetForm() {
     _nombreController.clear();
-    _cedulaController.clear();
     _telefonoController.clear();
     _emailController.clear();
-    _nombreEncargadoController.clear();
+    _actividadController.clear();
+    _lugarController.clear();
     _notasController.clear();
     _selectedDate = DateTime.now();
-    _selectedTime = TimeOfDay.now();
-    _selectedDepartment = 'Recursos Humanos';
   }
 
   @override
@@ -140,7 +119,7 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
               StepIndicator(
                 currentStep: _currentStep,
                 totalSteps: 3,
-                labels: const ['Datos', 'Programación', 'Confirmación'],
+                labels: const ['Datos', 'Actividad', 'Observaciones'],
               ),
               const SizedBox(height: 32),
 
@@ -182,24 +161,19 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
                           )
                         : FilledButton.icon(
                             onPressed: () {
-                              if (_currentStep == 0) {
-                                if (_nombreController.text.isNotEmpty &&
-                                    _cedulaController.text.isNotEmpty) {
-                                  setState(() {
-                                    _currentStep++;
-                                  });
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          'Por favor completa todos los campos'),
-                                    ),
-                                  );
-                                }
-                              } else {
+                              if (_nombreController.text.isNotEmpty &&
+                                  _actividadController.text.isNotEmpty &&
+                                  _lugarController.text.isNotEmpty) {
                                 setState(() {
                                   _currentStep++;
                                 });
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Por favor completa los campos requeridos'),
+                                  ),
+                                );
                               }
                             },
                             icon: const Icon(Icons.arrow_forward),
@@ -227,7 +201,7 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
         TextFormField(
           controller: _nombreController,
           decoration: InputDecoration(
-            labelText: 'Nombre Completo',
+            labelText: 'Nombre Completo *',
             hintText: 'Ej: Juan Pérez',
             prefixIcon: const Icon(Icons.person),
             border: OutlineInputBorder(
@@ -243,27 +217,9 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
         ),
         const SizedBox(height: 16),
         TextFormField(
-          controller: _cedulaController,
-          decoration: InputDecoration(
-            labelText: 'Cédula/Documento',
-            hintText: 'Ej: 123456789',
-            prefixIcon: const Icon(Icons.credit_card),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'La cédula es requerida';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
           controller: _telefonoController,
           decoration: InputDecoration(
-            labelText: 'Teléfono',
+            labelText: 'Teléfono (Opcional)',
             hintText: 'Ej: +57 123456789',
             prefixIcon: const Icon(Icons.phone),
             border: OutlineInputBorder(
@@ -275,7 +231,7 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
         TextFormField(
           controller: _emailController,
           decoration: InputDecoration(
-            labelText: 'Email',
+            labelText: 'Email (Opcional)',
             hintText: 'Ej: juan@example.com',
             prefixIcon: const Icon(Icons.email),
             border: OutlineInputBorder(
@@ -300,7 +256,7 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Programación de Inducción',
+          'Detalles de la Inducción',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
@@ -309,7 +265,7 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
           color: Colors.blue.withOpacity(0.1),
           child: ListTile(
             leading: const Icon(Icons.calendar_today),
-            title: const Text('Fecha'),
+            title: const Text('Fecha de Inducción'),
             subtitle: Text(
               '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
             ),
@@ -318,49 +274,41 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Card(
-          elevation: 0,
-          color: Colors.purple.withOpacity(0.1),
-          child: ListTile(
-            leading: const Icon(Icons.access_time),
-            title: const Text('Hora'),
-            subtitle: Text(_selectedTime.format(context)),
-            trailing: const Icon(Icons.edit),
-            onTap: _selectTime,
+        TextFormField(
+          controller: _actividadController,
+          decoration: InputDecoration(
+            labelText: 'Actividad Realizada *',
+            hintText: 'Ej: Inducción Laboral, Capacitación de Seguridad',
+            prefixIcon: const Icon(Icons.assignment),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
+          maxLines: 2,
+          validator: (value) {
+            if (value?.isEmpty ?? true) {
+              return 'La actividad es requerida';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 16),
-        const Text('Departamento', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
+        TextFormField(
+          controller: _lugarController,
+          decoration: InputDecoration(
+            labelText: 'Lugar de la Inducción *',
+            hintText: 'Ej: Oficina Principal, Sala de Capacitación',
+            prefixIcon: const Icon(Icons.location_on),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          child: DropdownButton<String>(
-            isExpanded: true,
-            value: _selectedDepartment,
-            underline: const SizedBox(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedDepartment = newValue ?? 'Recursos Humanos';
-              });
-            },
-            items: [
-              'Recursos Humanos',
-              'Operaciones',
-              'Ventas',
-              'Tecnología',
-              'Finanzas',
-              'Otro',
-            ].map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-          ),
+          validator: (value) {
+            if (value?.isEmpty ?? true) {
+              return 'El lugar es requerido';
+            }
+            return null;
+          },
         ),
       ],
     );
@@ -371,39 +319,21 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Detalles Finales',
+          'Notas y Observaciones',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _nombreEncargadoController,
-          decoration: InputDecoration(
-            labelText: 'Nombre del Encargado',
-            hintText: 'Responsable de la inducción',
-            prefixIcon: const Icon(Icons.badge),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'El encargado es requerido';
-            }
-            return null;
-          },
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: _notasController,
           decoration: InputDecoration(
             labelText: 'Notas/Observaciones (Opcional)',
-            hintText: 'Información adicional',
+            hintText: 'Información adicional o comentarios',
             prefixIcon: const Icon(Icons.notes),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          maxLines: 4,
+          maxLines: 5,
         ),
         const SizedBox(height: 24),
         const Text(
@@ -418,11 +348,22 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSummaryItem('Nombre:', _nombreController.text),
-                _buildSummaryItem('Cédula:', _cedulaController.text),
-                _buildSummaryItem('Fecha:', '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
-                _buildSummaryItem('Hora:', _selectedTime.format(context)),
-                _buildSummaryItem('Departamento:', _selectedDepartment),
-                _buildSummaryItem('Encargado:', _nombreEncargadoController.text),
+                if (_telefonoController.text.isNotEmpty)
+                  _buildSummaryItem('Teléfono:', _telefonoController.text),
+                if (_emailController.text.isNotEmpty)
+                  _buildSummaryItem('Email:', _emailController.text),
+                _buildSummaryItem(
+                    'Fecha:',
+                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
+                _buildSummaryItem('Actividad:', _actividadController.text),
+                _buildSummaryItem('Lugar:', _lugarController.text),
+                if (_notasController.text.isNotEmpty) ...
+                  [
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    _buildSummaryItem('Notas:', _notasController.text),
+                  ]
               ],
             ),
           ),
@@ -435,10 +376,17 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(value, style: TextStyle(color: Colors.grey[600])),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
