@@ -6,12 +6,14 @@ import '../services/database_service.dart';
 class InductionCard extends StatelessWidget {
   final Induction induction;
   final VoidCallback onDeleted;
+  final VoidCallback onStatusToggled;
   final _dbService = DatabaseService.instance;
 
   InductionCard({
     Key? key,
     required this.induction,
     required this.onDeleted,
+    required this.onStatusToggled,
   }) : super(key: key);
 
   @override
@@ -44,23 +46,23 @@ class InductionCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
+                    color: induction.completada ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green),
+                    border: Border.all(color: induction.completada ? Colors.green : Colors.orange),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
+                        induction.completada ? Icons.check_circle : Icons.pending,
+                        color: induction.completada ? Colors.green : Colors.orange,
                         size: 16,
                       ),
-                      SizedBox(width: 6),
+                      const SizedBox(width: 6),
                       Text(
-                        'Completada',
+                        induction.completada ? 'Completada' : 'Pendiente',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: induction.completada ? Colors.green : Colors.orange,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
@@ -156,14 +158,28 @@ class InductionCard extends StatelessWidget {
                 ),
               ],
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Registrado: ${DateFormat('dd/MM/yyyy hh:mm').format(induction.fechaCreacion)}',
                   style: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 12,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: onStatusToggled,
+                  icon: Icon(
+                    induction.completada ? Icons.undo : Icons.check_circle_outline,
+                    size: 18,
+                  ),
+                  label: Text(induction.completada ? 'Marcar pendiente' : 'Marcar completada'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: induction.completada ? Colors.orange : Colors.green,
                   ),
                 ),
                 TextButton.icon(

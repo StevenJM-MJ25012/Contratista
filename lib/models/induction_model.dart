@@ -18,6 +18,9 @@ class Induction {
 
   late String notas; // Observaciones
 
+  @Index()
+  late bool completada;
+
   late DateTime fechaCreacion;
 
   Induction({
@@ -26,10 +29,13 @@ class Induction {
     required this.actividad,
     required this.lugar,
     this.notas = '',
+    this.completada = false,
   }) {
     fechaCreacion = DateTime.now();
   }
 
   // Constructor vacío requerido por Isar
-  Induction.empty();
+  Induction.empty() {
+    completada = false;
+  }
 }

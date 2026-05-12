@@ -18,6 +18,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
   List<Induction> _inductions = [];
   List<Induction> _filteredInductions = [];
   bool _isLoading = true;
+  bool? _statusFilter;
 
   @override
   void initState() {
@@ -37,13 +38,45 @@ class _RecordsScreenState extends State<RecordsScreen> {
       _isLoading = true;
     });
 
-    final inductions = await _dbService.getInductionsByDate(_selectedDate);
+    try {
+      var inductions = await _dbService.getInductionsByDate(_selectedDate);
+      if (_statusFilter != null) {
+        inductions = inductions
+            .where((induction) => induction.completada == _statusFilter)
+            .toList();
+      }
+      if (!mounted) return;
+      setState(() {
+        _inductions = inductions;
+        _filteredInductions = inductions;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _inductions = [];
+        _filteredInductions = [];
+        _isLoading = false;
+      });
+      debugPrint('Error cargando inducciones: $e');
+    }
+  }
 
+  Future<void> _setStatusFilter(bool? filter) async {
     setState(() {
-      _inductions = inductions;
-      _filteredInductions = inductions;
-      _isLoading = false;
+      _statusFilter = filter;
     });
+    if (_searchController.text.isEmpty) {
+      await _loadInductions();
+    } else {
+      await _filterInductions();
+    }
+  }
+
+  Future<void> _toggleInductionStatus(Induction induction) async {
+    induction.completada = !induction.completada;
+    await _dbService.updateInduction(induction);
+    await _loadInductions();
   }
 
   Future<void> _filterInductions() async {
@@ -54,7 +87,13 @@ class _RecordsScreenState extends State<RecordsScreen> {
       return;
     }
 
-    final results = await _dbService.searchInductions(query);
+    var results = await _dbService.searchInductions(query);
+    if (_statusFilter != null) {
+      results = results
+          .where((induction) => induction.completada == _statusFilter)
+          .toList();
+    }
+
     final dateResults = results
         .where((induction) =>
             induction.fechaInduccion.year == _selectedDate.year &&
@@ -140,6 +179,79 @@ class _RecordsScreenState extends State<RecordsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Tooltip(
+                    message: 'Todas',
+                    child: FilledButton(
+                      onPressed: () => _setStatusFilter(null),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _statusFilter == null
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey.shade200,
+                        foregroundColor: _statusFilter == null
+                            ? Colors.white
+                            : Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: const Icon(Icons.list_alt),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Tooltip(
+                    message: 'Pendientes',
+                    child: FilledButton(
+                      onPressed: () => _setStatusFilter(false),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _statusFilter == false
+                            ? Colors.orange
+                            : Colors.grey.shade200,
+                        foregroundColor: _statusFilter == false
+                            ? Colors.white
+                            : Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: const Icon(Icons.pending_actions),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Tooltip(
+                    message: 'Completadas',
+                    child: FilledButton(
+                      onPressed: () => _setStatusFilter(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _statusFilter == true
+                            ? Colors.green
+                            : Colors.grey.shade200,
+                        foregroundColor: _statusFilter == true
+                            ? Colors.white
+                            : Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: const Icon(Icons.check_circle_outline),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
 
           // Inductions List
@@ -185,6 +297,9 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       induction: induction,
                       onDeleted: () {
                         _loadInductions();
+                      },
+                      onStatusToggled: () {
+                        _toggleInductionStatus(induction);
                       },
                     ),
                   );

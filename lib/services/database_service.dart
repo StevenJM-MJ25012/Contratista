@@ -76,6 +76,19 @@ class DatabaseService {
     return existing != null;
   }
 
+  // Actualizar inducción existente
+  Future<bool> updateInduction(Induction induction) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.inductions.put(induction);
+      });
+      return true;
+    } catch (e) {
+      print('Error actualizando inducción: $e');
+      return false;
+    }
+  }
+
   // Eliminar inducción
   Future<bool> deleteInduction(int id) async {
     try {

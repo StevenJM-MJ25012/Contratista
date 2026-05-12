@@ -161,9 +161,15 @@ class _CreateInductionScreenState extends State<CreateInductionScreen> {
                           )
                         : FilledButton.icon(
                             onPressed: () {
-                              if (_nombreController.text.isNotEmpty &&
-                                  _actividadController.text.isNotEmpty &&
-                                  _lugarController.text.isNotEmpty) {
+                              final isStep1Valid = _currentStep == 0
+                                  ? _nombreController.text.trim().isNotEmpty
+                                  : true;
+                              final isStep2Valid = _currentStep == 1
+                                  ? _actividadController.text.trim().isNotEmpty &&
+                                      _lugarController.text.trim().isNotEmpty
+                                  : true;
+
+                              if (isStep1Valid && isStep2Valid) {
                                 setState(() {
                                   _currentStep++;
                                 });
